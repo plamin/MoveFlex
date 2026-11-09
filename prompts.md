@@ -1,4 +1,4 @@
-<!-- PROMPT 1 -->
+# PROMPT 1
 
 Estou desenvolvendo o MoveFlex para a Global Solution da FIAP. Quero concluir a integração do endpoint GET /viagens com o Oracle, seguindo o padrão DAO e BO da aula.
 
@@ -11,7 +11,7 @@ Leia o AGENTS.md, o pom.xml, o guia do banco e o SQL de criação das tabelas. I
 5. Limite a mudança à listagem de viagens. Use os scripts do banco apenas como referência. Não execute DDL nem carga de dados e não altere as credenciais.
 6. Compile com o Maven Wrapper e rode os testes aplicáveis. Ao final, diga quais arquivos mudou, explique o caminho da requisição do controller até o Oracle e informe separadamente se compilou e se o GET foi testado com o banco real.
 
-<!-- PROMPT 2 -->
+# PROMPT 2
 
 
 Leia o AGENTS.md e o código atual do GET /viagens. Implemente um filtro opcional por data, seguindo o fluxo ViagemController → ViagemBO → ViagemDAO.
@@ -21,3 +21,8 @@ GET /viagens?data=2025-11-03 deve retornar apenas as viagens daquele dia, filtra
 Uma data inválida deve retornar HTTP 400. Uma data válida sem viagens deve retornar HTTP 200 com [].
 
 Atualize os testes para cobrir esses casos e execute os que puder sem acesso ao Oracle. Ao terminar, explique o que mudou em cada camada e quais verificações ficaram pendentes. 
+
+
+# PROMPT 3
+
+volte para a main corrigindo o bug que ta dando
