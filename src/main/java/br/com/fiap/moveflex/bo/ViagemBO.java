@@ -6,6 +6,7 @@ import br.com.fiap.moveflex.model.Viagem;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -18,8 +19,12 @@ public class ViagemBO {
     }
 
     public List<Viagem> listar() {
+        return listar(null);
+    }
+
+    public List<Viagem> listar(LocalDate data) {
         try {
-            return viagemDAO.listar();
+            return viagemDAO.listar(data);
         } catch (SQLException e) {
             throw new ConsultaViagemException(e);
         }
