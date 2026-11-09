@@ -7,6 +7,10 @@ import br.com.fiap.moveflex.dao.ViagemDAO;
 import br.com.fiap.moveflex.exception.TratamentoExcecoes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -37,8 +41,10 @@ class ViagemListagemTests {
                 .setControllerAdvice(new TratamentoExcecoes()).build();
     }
 
-    @Test
-    void preservaContratoECombinaDataComHora() throws Exception {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "2025-11-03")
+    void preservaContratoECombinaDataComHora(String data) throws Exception {
         when(result.next()).thenReturn(true, false);
         when(result.getLong("ID_VIAGEM")).thenReturn(1L);
         when(result.getDate("DATA_VIAGEM")).thenReturn(Date.valueOf("2025-11-03"));
@@ -47,17 +53,56 @@ class ViagemListagemTests {
                 .thenReturn(Timestamp.valueOf("2025-11-04 00:11:00"));
         when(result.getString("BAIRRO")).thenReturn("Mooca");
 
-        mvc.perform(get("/viagens")).andExpect(status().isOk()).andExpect(content().json("""
+        var request = get("/viagens");
+        if (data != null) request.param("data", data);
+        mvc.perform(request).andExpect(status().isOk()).andExpect(content().json("""
                 [{"id":1,"dataHoraSaida":"2025-11-03T23:30:00",
                   "dataHoraChegada":"2025-11-04T00:11:00","bairro":"Mooca"}]
                 """));
         verificarFechamento();
+        verificarFiltro(data);
     }
 
-    @Test
-    void semViagensRetornaListaVazia() throws Exception {
-        mvc.perform(get("/viagens")).andExpect(status().isOk()).andExpect(content().json("[]"));
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "2025-11-03")
+    void semViagensRetornaListaVazia(String data) throws Exception {
+        var request = get("/viagens");
+        if (data != null) request.param("data", data);
+        mvc.perform(request).andExpect(status().isOk()).andExpect(content().json("[]"));
         verificarFechamento();
+        verificarFiltro(data);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2025-02-29", "2025-11-31", "03/11/2025", "abc", "", "2025-1-03"})
+    void dataInvalidaRetorna400SemConsultarBanco(String data) throws Exception {
+        mvc.perform(get("/viagens").param("data", data))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("status").value(400))
+                .andExpect(jsonPath("mensagem").value("Data invalida. Use yyyy-MM-dd."));
+        verifyNoInteractions(oracle, connection, statement, result);
+    }
+
+    private void verificarFiltro(String data) throws Exception {
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(connection).prepareStatement(sql.capture());
+        String consulta = sql.getValue();
+        org.junit.jupiter.api.Assertions.assertTrue(consulta.endsWith(
+                "ORDER BY v.DATA_VIAGEM, v.HORARIO_PARTIDA, v.ID_VIAGEM"));
+        org.junit.jupiter.api.Assertions.assertTrue(consulta.contains("JOIN LINHA l ON l.ID_LINHA = v.ID_LINHA"));
+        org.junit.jupiter.api.Assertions.assertTrue(consulta.contains("JOIN PONTO_EMBARQUE p ON p.ID_PONTO = l.ID_PONTO_ORIGEM"));
+        org.junit.jupiter.api.Assertions.assertTrue(consulta.contains("JOIN REGIAO r ON r.ID_REGIAO = p.ID_REGIAO"));
+        if (data == null) {
+            org.junit.jupiter.api.Assertions.assertFalse(consulta.contains("WHERE"));
+            verify(statement, never()).setDate(anyInt(), any());
+        } else {
+            org.junit.jupiter.api.Assertions.assertTrue(consulta.contains("WHERE v.DATA_VIAGEM >= ? AND v.DATA_VIAGEM < ?"));
+            var ordem = inOrder(statement);
+            ordem.verify(statement).setDate(1, Date.valueOf(data));
+            ordem.verify(statement).setDate(2, Date.valueOf(java.time.LocalDate.parse(data).plusDays(1)));
+            ordem.verify(statement).executeQuery();
+        }
     }
 
     @Test

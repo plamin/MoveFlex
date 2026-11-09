@@ -24,6 +24,10 @@ public class ViagemDAO {
     }
 
     public List<Viagem> listar() throws SQLException {
+        return listar(null);
+    }
+
+    public List<Viagem> listar(LocalDate filtroData) throws SQLException {
         String sql = """
                 SELECT v.ID_VIAGEM,
                        v.DATA_VIAGEM,
@@ -34,27 +38,35 @@ public class ViagemDAO {
                 JOIN LINHA l ON l.ID_LINHA = v.ID_LINHA
                 JOIN PONTO_EMBARQUE p ON p.ID_PONTO = l.ID_PONTO_ORIGEM
                 JOIN REGIAO r ON r.ID_REGIAO = p.ID_REGIAO
-                ORDER BY v.DATA_VIAGEM, v.HORARIO_PARTIDA, v.ID_VIAGEM
                 """;
+        if (filtroData != null) {
+            sql += " WHERE v.DATA_VIAGEM >= ? AND v.DATA_VIAGEM < ?";
+        }
+        sql += " ORDER BY v.DATA_VIAGEM, v.HORARIO_PARTIDA, v.ID_VIAGEM";
 
         List<Viagem> viagens = new ArrayList<>();
 
         try (Connection conexao = conexaoOracle.getConnection();
-             PreparedStatement consulta = conexao.prepareStatement(sql);
-             ResultSet resultado = consulta.executeQuery()) {
+             PreparedStatement consulta = conexao.prepareStatement(sql)) {
+            if (filtroData != null) {
+                consulta.setDate(1, java.sql.Date.valueOf(filtroData));
+                consulta.setDate(2, java.sql.Date.valueOf(filtroData.plusDays(1)));
+            }
+            try (ResultSet resultado = consulta.executeQuery()) {
 
-            while (resultado.next()) {
-                LocalDate data = resultado.getDate("DATA_VIAGEM").toLocalDate();
-                LocalTime hora = LocalTime.parse(resultado.getString("HORARIO_PARTIDA"));
+                while (resultado.next()) {
+                    LocalDate data = resultado.getDate("DATA_VIAGEM").toLocalDate();
+                    LocalTime hora = LocalTime.parse(resultado.getString("HORARIO_PARTIDA"));
 
-                Viagem viagem = new Viagem(
-                        resultado.getLong("ID_VIAGEM"),
-                        data.atTime(hora),
-                        resultado.getTimestamp("CHEGADA_PREVISTA").toLocalDateTime(),
-                        resultado.getString("BAIRRO")
-                );
+                    Viagem viagem = new Viagem(
+                            resultado.getLong("ID_VIAGEM"),
+                            data.atTime(hora),
+                            resultado.getTimestamp("CHEGADA_PREVISTA").toLocalDateTime(),
+                            resultado.getString("BAIRRO")
+                    );
 
-                viagens.add(viagem);
+                    viagens.add(viagem);
+                }
             }
         } catch (DateTimeParseException e) {
             throw new SQLException("Horario de partida invalido no banco.", e);
