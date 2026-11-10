@@ -14,6 +14,9 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.fiap.moveflex.model.OcupacaoViagem;
+import java.util.Optional;
+
 @Repository
 public class ViagemDAO {
 
@@ -73,5 +76,39 @@ public class ViagemDAO {
         }
 
         return viagens;
+    }
+
+    public Optional<OcupacaoViagem> consultarOcupacao(Long idViagem) throws SQLException {
+    String sql = """
+            SELECT v.ID_VIAGEM,
+                   van.CAPACIDADE,
+                   COUNT(r.ID_RESERVA) AS LUGARES_OCUPADOS
+            FROM VIAGEM v
+            JOIN VAN van ON van.ID_VAN = v.ID_VAN
+            LEFT JOIN RESERVA r ON r.ID_VIAGEM = v.ID_VIAGEM
+                               AND r.STATUS <> 'CANCELADA'
+            WHERE v.ID_VIAGEM = ?
+            GROUP BY v.ID_VIAGEM, van.CAPACIDADE
+            """;
+
+    try (Connection conexao = conexaoOracle.getConnection();
+        PreparedStatement consulta = conexao.prepareStatement(sql)) {
+
+        consulta.setLong(1, idViagem);
+
+        try (ResultSet resultado = consulta.executeQuery()) {
+            if (!resultado.next()) {
+                return Optional.empty();
+            }
+
+            OcupacaoViagem ocupacao = new OcupacaoViagem(
+                    resultado.getLong("ID_VIAGEM"),
+                    resultado.getInt("CAPACIDADE"),
+                    resultado.getInt("LUGARES_OCUPADOS")
+            );
+
+            return Optional.of(ocupacao);
+        }
+        }
     }
 }
