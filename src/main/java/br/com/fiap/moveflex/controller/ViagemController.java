@@ -12,6 +12,9 @@ import java.time.format.DateTimeParseException;
 
 import java.util.List;
 
+import br.com.fiap.moveflex.model.OcupacaoViagem;
+import org.springframework.web.bind.annotation.PathVariable;
+
 @RestController
 public class ViagemController {
 
@@ -36,5 +39,13 @@ public class ViagemController {
             }
         }
         return viagemBO.listar(filtro);
+    }
+
+    @GetMapping("/viagens/{id}/ocupacao")
+    public OcupacaoViagem consultarOcupacao(@PathVariable("id") Long idViagem) {
+        return viagemBO.consultarOcupacao(idViagem)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Viagem não encontrada."
+                ));
     }
 }

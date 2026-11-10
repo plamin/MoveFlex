@@ -9,6 +9,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
+import br.com.fiap.moveflex.model.OcupacaoViagem;
+import java.util.Optional;
+
 @Service
 public class ViagemBO {
 
@@ -25,6 +28,14 @@ public class ViagemBO {
     public List<Viagem> listar(LocalDate data) {
         try {
             return viagemDAO.listar(data);
+        } catch (SQLException e) {
+            throw new ConsultaViagemException(e);
+        }
+    }
+
+    public Optional<OcupacaoViagem> consultarOcupacao(Long idViagem) {
+        try {
+            return viagemDAO.consultarOcupacao(idViagem);
         } catch (SQLException e) {
             throw new ConsultaViagemException(e);
         }
