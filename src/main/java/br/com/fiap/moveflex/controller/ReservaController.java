@@ -30,4 +30,11 @@ public class ReservaController {
                                 @RequestBody PedidoTrocaViagem pedido) {
         return reservaBO.trocarViagem(idReserva, pedido.idViagem());
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelar(@PathVariable("id") Long idReserva) {
+        reservaBO.cancelar(idReserva);
+    }
+
 }
