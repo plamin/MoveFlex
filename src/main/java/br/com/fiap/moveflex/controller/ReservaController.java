@@ -22,4 +22,12 @@ public class ReservaController {
     public Reserva criar(@RequestBody PedidoReserva pedido) {
         return reservaBO.reservar(pedido.idColaborador(), pedido.idViagem());
     }
+
+    public record PedidoTrocaViagem(Long idViagem) {}
+
+    @PutMapping("/{id}")
+    public Reserva trocarViagem(@PathVariable("id") Long idReserva,
+                                @RequestBody PedidoTrocaViagem pedido) {
+        return reservaBO.trocarViagem(idReserva, pedido.idViagem());
+    }
 }
