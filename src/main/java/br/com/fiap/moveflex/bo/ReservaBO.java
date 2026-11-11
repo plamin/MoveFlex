@@ -123,6 +123,35 @@ public class ReservaBO {
         }
     }
 
+    public void cancelar(Long idReserva) {
+        if (idReserva == null || idReserva <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Informe um ID de reserva válido."
+            );
+        }
+
+        try (Connection conexao = conexaoOracle.getConnection()) {
+            if (reservaDAO.cancelar(conexao, idReserva)) {
+                return;
+            }
+
+            Reserva reserva = reservaDAO.buscarPorId(conexao, idReserva)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Reserva não encontrada."
+                    ));
+
+            if (!"CANCELADA".equals(reserva.getStatus())) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Apenas reservas confirmadas podem ser canceladas."
+                );
+            }
+        } catch (SQLException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao cancelar a reserva.", e
+            );
+        }
+    }
+
     private void validarDisponibilidade(Long idViagem) {
         try {
             OcupacaoViagem ocupacao = viagemDAO.consultarOcupacao(idViagem)

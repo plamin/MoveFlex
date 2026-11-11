@@ -91,6 +91,20 @@ public class ReservaDAO {
             return comando.executeUpdate() == 1;
         }
     }
+
+    public boolean cancelar(Connection conexao, Long idReserva) throws SQLException {
+        String sql = """
+                UPDATE RESERVA
+                SET STATUS = 'CANCELADA'
+                WHERE ID_RESERVA = ?
+                AND STATUS = 'CONFIRMADA'
+                """;
+
+        try (PreparedStatement comando = conexao.prepareStatement(sql)) {
+            comando.setLong(1, idReserva);
+            return comando.executeUpdate() == 1;
+        }
+    }
     
     public boolean colaboradorExiste(Connection conexao, Long idColaborador) throws SQLException {
         String sql = "SELECT 1 FROM COLABORADOR WHERE ID_COLABORADOR = ?";
