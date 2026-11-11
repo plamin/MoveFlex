@@ -52,7 +52,7 @@ public class ReservaBO {
                 );
             }
 
-            if (reservaDAO.existeReservaNoMesmoDiaESentido(conexao, idColaborador, idViagem)) {
+            if (reservaDAO.existeReservaNoMesmoDiaESentido(conexao, idColaborador, idViagem, null)) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "O colaborador já possui uma reserva nesse sentido para este dia."
@@ -67,6 +67,61 @@ public class ReservaBO {
         }
     }
 
+    public Reserva trocarViagem(Long idReserva, Long novaIdViagem) {
+        if (idReserva == null || idReserva <= 0 || novaIdViagem == null || novaIdViagem <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Informe IDs válidos para a reserva e a nova viagem."
+            );
+        }
+
+        try (Connection conexao = conexaoOracle.getConnection()) {
+            Reserva atual = reservaDAO.buscarPorId(conexao, idReserva)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Reserva não encontrada."
+                    ));
+
+            if (!"CONFIRMADA".equals(atual.getStatus())) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Apenas reservas confirmadas podem trocar de viagem."
+                );
+            }
+
+            if (novaIdViagem.equals(atual.getIdViagem())) {
+                return atual;
+            }
+
+            validarDisponibilidade(novaIdViagem);
+
+            Long idColaborador = atual.getIdColaborador();
+
+            if (reservaDAO.existeReserva(conexao, idColaborador, novaIdViagem)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Já existe uma reserva deste colaborador para a nova viagem."
+                );
+            }
+
+            if (reservaDAO.existeReservaNoMesmoDiaESentido(
+                    conexao, idColaborador, novaIdViagem, idReserva)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "O colaborador já possui outra reserva nesse sentido para este dia."
+                );
+            }
+
+            if (!reservaDAO.atualizarViagem(conexao, idReserva, novaIdViagem)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "A reserva já não está disponível para alteração."
+                );
+            }
+
+            return new Reserva(idReserva, idColaborador, novaIdViagem,
+                    atual.getDataSolicitacao(), atual.getStatus());
+
+        } catch (SQLException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao alterar a viagem da reserva.", e
+            );
+        }
+    }
 
     private void validarDisponibilidade(Long idViagem) {
         try {
