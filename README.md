@@ -83,3 +83,44 @@ Os testes `ViagemListagemTests` usam JDBC simulado para verificar contrato HTTP,
 Validação realizada em 09/11/2026: `mvnw.cmd verify` concluiu com BUILD SUCCESS no JDK 21.0.6 (seis testes locais, sem falhas). O teste explícito `ConexaoOracleIT` passou com `SELECT 1 FROM DUAL`. O GET real foi chamado por HTTP, mas retornou 500; a execução direta do DAO identificou código Oracle 942 (`ORA-00942`, SQLState `42000`: tabela/view inexistente ou sem acesso). Portanto, a listagem com dados reais ainda não foi validada com sucesso. É necessário disponibilizar ao usuário configurado as tabelas `VIAGEM`, `LINHA`, `PONTO_EMBARQUE` e `REGIAO` do SQL do grupo e repetir os testes de integração. Não foram alterados schema, dados ou credenciais.
 
 Validação do filtro: os testes locais cobrem listagem com e sem data, vínculo dos parâmetros JDBC antes da consulta, preservação dos joins e ordenação, lista vazia e datas inválidas sem acessar o DAO. A consulta filtrada no Oracle real e a validação pública no Render permanecem pendentes; nenhum teste com sufixo IT foi executado nesta alteração.
+
+## Interface do colaborador
+
+O frontend fica em `src/main/resources/static` e é servido na raiz pelo próprio Spring Boot. Usa HTML, CSS e JavaScript sem bibliotecas externas; não exige npm nem servidor separado. As chamadas `fetch` usam caminhos relativos e a conexão Oracle permanece exclusivamente no backend.
+
+Com Java 21 e a configuração Oracle local já preparada, execute na raiz do repositório:
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
+.\mvnw.cmd spring-boot:run
+```
+
+Abra **http://localhost:8080/**. Se necessário neste ambiente, acrescente `'-Dmaven.repo.local=C:\Users\PEDRO\.m2\repository'` ao comando do Wrapper. Nenhuma credencial deve ser incluída nos arquivos estáticos.
+
+### Roteiro de uso
+
+1. Ao abrir, a tela chama `GET /viagens` sem filtro. Selecione uma data e clique em **Filtrar**; **Limpar filtro** volta a todas as datas.
+2. Clique em **Ver vagas**. A tela chama `GET /viagens/{idViagem}/ocupacao` e exibe capacidade, ocupados e vagas. Uma viagem lotada fica com a reserva desabilitada; falhas permitem repetir a consulta.
+3. Com um colaborador e viagens destinados a teste, informe o ID do colaborador e clique em **Reservar lugar**. O POST envia `idColaborador` e `idViagem`. Guarde o número da reserva apresentado com a viagem e o status retornados.
+4. Clique em **Trocar viagem**, escolha outra saída e confira a viagem atual e a nova. **Confirmar troca** envia `PUT /reservas/{idReserva}` com apenas `idViagem` no corpo. O resultado substitui os dados exibidos.
+5. Clique em **Cancelar reserva** e confira o número no diálogo antes de confirmar. O DELETE não tem corpo; HTTP 204 mostra **Reserva cancelada**. A ocupação visível é consultada novamente após criação, troca e cancelamento.
+6. Para uma reserva anterior, abra **Já tenho o número da reserva** e informe o número. Não há GET de reserva na API: a interface não simula uma consulta, nem informa status ou viagem atual desconhecidos. Permite enviar troca ou cancelamento; a API valida a operação.
+
+### Limitações e cuidados de interpretação
+
+- `bairro` é o bairro da linha, inclusive na volta; a listagem não fornece sentido, ponto efetivo de partida ou destino. Por isso a interface usa **Bairro da linha**, sem inventar uma origem. Os horários são apresentados como recebidos, sem conversão de fuso.
+- A listagem não fornece vagas nem status da viagem: a disponibilidade é consultada ao selecionar **Ver vagas**. A API ainda pode recusar uma reserva depois dessa consulta.
+- A confirmação fica apenas na sessão aberta, sem armazenamento local de dados do colaborador. Guarde o número para gerenciar depois.
+- O protótipo não possui autenticação: informar um número de reserva não comprova identidade. O backend e suas regras foram preservados, inclusive a limitação de concorrência descrita no AGENTS.md.
+
+### Verificação do frontend
+
+```powershell
+node --check src/main/resources/static/app.js
+node --test src/test/frontend/app.test.cjs
+.\mvnw.cmd verify
+```
+
+Em 13/11/2026, os 10 testes de frontend passaram no Node 22.13.1. Eles executam o JavaScript com DOM mínimo e respostas HTTP simuladas: carregamento sem filtro, filtro e limpeza, estado vazio, lotação, criação/troca/cancelamento, reserva manual, mensagens 400/404/409, falha de rede, prevenção de POST duplicado e descarte de resposta atrasada. Não são testes de navegador nem prova de integração Oracle. O Maven Wrapper concluiu o build em Java 21 com 14 testes locais aprovados. O JAR foi iniciado temporariamente na porta 18080 e `/`, `/styles.css` e `/app.js` responderam HTTP 200.
+
+Pendências manuais: o controle de navegador falhou ao inicializar no ambiente do agente, portanto não houve inspeção visual desktop/celular. Conferir a tela em aproximadamente 1440 px e 390 px, ausência de rolagem horizontal, navegação por Tab, foco, confirmação de cancelamento e leitura das mensagens. Validar o roteiro completo com Oracle usando somente registros identificados para teste, além de conflito 409, recurso inexistente 404 e falha de rede. Nenhuma operação de escrita no Oracle foi realizada nesta tarefa. Deploy, commit e registro de prompts ficam com o aluno.

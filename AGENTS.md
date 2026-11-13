@@ -2,266 +2,94 @@
 
 ## Contexto do projeto
 
-MoveFlex é a solução de fretamento corporativo compartilhado da equipe
-para a Global Solution CitizenTech 2026 da FIAP, com piloto proposto
-no polo da Faria Lima, em São Paulo.
+MoveFlex é a solução de fretamento corporativo compartilhado da equipe para a Global Solution CitizenTech 2026 da FIAP. O piloto proposto atende o polo da Faria Lima, em São Paulo.
 
-Nesta entrega de Java, funcionários de empresas diferentes podem
-reservar lugares na mesma viagem. A plataforma organiza os cadastros,
-consulta a disponibilidade e registra reservas e cancelamentos.
-As operadoras parceiras executam as viagens.
+O problema central é a concentração de carros nos horários de entrada e saída do trabalho. A proposta reúne funcionários de empresas do mesmo polo em vans compartilhadas, operadas por fretadoras parceiras.
+
+A aplicação Java implementa a consulta de viagens e o ciclo de vida das reservas. A ocupação informa quantos lugares estão em uso. Para estimar quantos carros deixaram de circular, o projeto também precisaria saber como cada passageiro se deslocava antes.
 
 ## Antes de implementar
 
-- Leia o README, o pom.xml e o código existente.
-- Preserve funcionalidades e alterações existentes.
-- Identifique os padrões utilizados nos exemplos de aula, quando disponíveis.
-- Siga os padrões do professor antes de adotar uma arquitetura diferente.
-- Se faltar uma informação que realmente impeça a implementação,
-  explique a pendência. Não invente credenciais ou requisitos.
-- Evite dependências e funcionalidades sem necessidade.
+- Leia o README, o `pom.xml` e o código relacionado à tarefa.
+- Confira as rotas nos controllers, os campos dos modelos e as respostas de erro.
+- Preserve as alterações existentes e os padrões utilizados em aula.
+- Faça mudanças pequenas que o aluno consiga verificar e explicar.
+- Restrinja a implementação ao pedido atual. Registre separadamente sugestões de evolução.
+- Priorize recursos já disponíveis no projeto antes de adicionar dependências.
 
-## Requisitos obrigatórios da avaliação
+## Stack e arquitetura
 
-- Java com Spring Boot.
-- API RESTful.
-- Persistência no servidor Oracle da FIAP.
-- Classes de modelo coerentes com o banco de dados.
-- Camadas DAO e BO explícitas.
-- Controllers com operações GET, POST, PUT e DELETE.
-- Tratamento centralizado de exceções.
-- Publicar a API no Render e incluir a URL real na documentação.
-  Validar o deploy chamando, pela URL pública, um endpoint que consulte
-  o Oracle da FIAP. Se essa validação estiver pendente, registrá-la.
-- Código e documentação coerentes entre si.
+- Java 21, Spring Boot, Maven Wrapper e Oracle da FIAP.
+- Fluxo principal: Controller → BO → DAO → Oracle.
+- `model` representa os dados do domínio. DTOs e records podem representar entradas e saídas específicas.
+- `controller` recebe as requisições e define as respostas HTTP.
+- `bo` coordena as operações e aplica as regras de negócio.
+- `dao` concentra o SQL, executa consultas e alterações e mapeia os resultados.
+- `exception` concentra o tratamento de exceções da aplicação.
+- `config` contém a configuração de conexão com o Oracle.
 
-Não substituir DAO e BO apenas por classes chamadas Repository
-e Service sem verificar os padrões exigidos pelo professor.
+Siga o padrão JDBC existente: `ConexaoOracle.getConnection()`, `PreparedStatement` com parâmetros e `try-with-resources`. Quem abre uma conexão é responsável por fechá-la. Preserve o driver Oracle e as versões definidos no `pom.xml`.
 
-Utilize a versão de Java definida no projeto e compatível com
-as orientações de aula. Documente as versões utilizadas.
+## API implementada
 
-## Arquitetura
+| Operação | Endpoint | Entrada | Sucesso |
+|---|---|---|---|
+| Listar viagens | `GET /viagens` | Filtro opcional `data` em `yyyy-MM-dd` | `200` com lista, inclusive `[]` |
+| Consultar ocupação | `GET /viagens/{idViagem}/ocupacao` | ID da viagem na URL | `200` com capacidade, lugares ocupados e vagas disponíveis |
+| Criar reserva | `POST /reservas` | JSON com `idColaborador` e `idViagem` | `201` com a reserva criada |
+| Trocar de viagem | `PUT /reservas/{idReserva}` | ID da reserva na URL e JSON com o novo `idViagem` | `200` com a reserva |
+| Cancelar reserva | `DELETE /reservas/{idReserva}` | ID da reserva na URL, sem corpo | `204` sem corpo |
 
-Fluxo principal:
-
-Controller -> BO -> DAO -> Oracle
-
-Responsabilidades:
-
-- model: entidades do domínio.
-- dto: objetos de entrada e saída da API, quando necessários.
-- controller: endpoints, validação de entrada e respostas HTTP.
-- bo: regras de negócio e coordenação das operações.
-- dao: acesso ao banco e operações de persistência.
-- exception: exceções específicas e tratamento centralizado.
-- config: configurações necessárias à aplicação.
-
-Não colocar SQL nos controllers.
-Não colocar regras de negócio nos controllers.
-Não concentrar toda a aplicação em uma única classe.
-
-- Implementar DAOs concretos com JDBC (`java.sql`) e o driver Oracle
-  `com.oracle.database.jdbc:ojdbc11`, seguindo o exemplo da aula.
-- Centralizar a abertura da conexão em `ConexaoOracle.getConnection()`,
-  usando `DriverManager` e as variáveis `DB_URL`, `DB_USER` e `DB_PASSWORD`.
-- Manter o SQL nos DAOs. Usar `PreparedStatement` com parâmetros,
-  `executeQuery()` para consultas e `executeUpdate()` para alterações.
-  Mapear as linhas do `ResultSet` para os objetos do domínio.
-- Nos cadastros com CRUD, seguir os nomes da aula: `inserir`, `listar`,
-  `atualizar` e `deletar`. Adicionar `buscarPorId` quando necessário.
-- Na reserva, o BO coordena a transação. Os DAOs envolvidos recebem
-  a mesma `Connection`. Bloquear a linha da viagem antes de verificar
-  a disponibilidade e registrar a reserva. Efetuar commit em caso de
-  sucesso e rollback em caso de falha.
-- Usar try-with-resources para fechar os recursos JDBC. Quem abriu
-  a conexão é responsável por fechá-la ao término da operação.
-
-## Domínio
-
-Entidades previstas, ajustáveis ao modelo acordado com o grupo:
-
-- Empresa
-- Funcionario
-- Operadora
-- Veiculo
-- PontoEmbarque
-- Linha
-- Viagem
-- Reserva
-
-Distinções importantes:
-
-- Linha representa um trajeto planejado.
-- Viagem representa uma execução em determinada data e horário.
-- Reserva associa um funcionário a uma viagem.
-- Uma viagem pode receber funcionários de várias empresas.
-- A capacidade utilizada na reserva deve estar claramente definida.
-
-Mantenha nomes e relacionamentos alinhados com a entrega de Database.
-Não crie tabelas incompatíveis com o DER acordado com o grupo.
-
-## Escopo principal
-
-Implementar:
-
-1. Cadastros necessários para operar as viagens.
-2. Consulta de viagens por data, destino e ponto de embarque,
-   conforme os relacionamentos definidos.
-3. Consulta de vagas disponíveis.
-4. Reserva de lugar.
-5. Cancelamento de reserva.
-6. Consulta de passageiros e ocupação por viagem.
-
-Priorize um fluxo completo funcionando antes de criar extras.
-
-Não implementar por padrão:
-- Pagamentos.
-- Rastreamento GPS em tempo real.
-- Emissão real de autorizações de transporte.
-- Chatbot.
-- Microserviços.
-- Integrações externas não solicitadas.
+No PUT, o colaborador é identificado a partir da reserva existente. A resposta do POST fornece o `id` usado para trocar ou cancelar essa reserva.
 
 ## Regras de negócio
 
-- Impedir reserva acima da capacidade da viagem.
-- Impedir reserva ativa duplicada do mesmo funcionário
-  na mesma viagem.
-- Impedir reserva em viagem cancelada ou já iniciada.
-- Validar a existência dos registros relacionados.
-- Cancelar uma reserva deve liberar sua vaga.
-- Preservar o histórico de reservas canceladas.
-- Impedir exclusões que deixem registros relacionados inconsistentes.
-- Não confiar em valores enviados pelo cliente para calcular
-  ocupação ou quantidade de vagas.
-- Permitir compartilhamento de uma viagem entre empresas.
+- A API valida os IDs recebidos e a existência dos registros necessários.
+- A disponibilidade vem do Oracle. Reservas canceladas ficam fora da contagem de lugares ocupados.
+- O banco admite um registro por par de colaborador e viagem, inclusive quando esse registro já foi cancelado.
+- Para viagens diferentes, a API impede outra reserva do mesmo colaborador no mesmo dia e sentido. Reservas canceladas ficam fora dessa verificação.
+- A troca se aplica a reservas confirmadas. A verificação de conflito ignora a própria reserva em alteração.
+- O cancelamento muda o status de `CONFIRMADA` para `CANCELADA`, preserva o histórico e libera a vaga. Repetir o cancelamento de uma reserva já cancelada retorna `204`.
+- A API verifica a disponibilidade antes da gravação. A proteção contra duas solicitações simultâneas para a última vaga está pendente no protótipo.
 
-As verificações de capacidade e a gravação da reserva devem ocorrer
-de maneira transacional, com proteção contra reservas simultâneas
-para a última vaga. Uma simples consulta seguida de insert,
-sem controle de concorrência, não é suficiente.
+Os nomes de tabelas e relacionamentos devem acompanhar o DER da equipe. Cadastros adicionais, filtros por destino ou ponto de embarque, consulta de passageiros e histórico por colaborador ficam fora do escopo atual do frontend.
 
-Não inventar regras de cobrança ou prazos de cancelamento.
-Quando necessário, documentar a decisão adotada.
+## Frontend do colaborador
 
-## API REST
+- Se o repositório já tiver frontend, siga sua estrutura. Caso contrário, use `src/main/resources/static` para servir HTML, CSS e JavaScript pelo Spring Boot.
+- Use caminhos relativos nas chamadas à API para funcionar localmente e, depois, na URL pública.
+- Use os campos que os endpoints devolvem. Consulte a ocupação quando o usuário selecionar uma viagem.
+- Informe carregamento, lista vazia, sucesso e falha. Aproveite o campo `mensagem` das respostas de erro quando estiver disponível.
+- Trate respostas `204` sem tentar ler JSON.
+- Evite requisições duplicadas enquanto uma ação estiver em andamento.
+- Use português, formulários com rótulos, navegação por teclado, foco visível e layout responsivo.
+- A identidade visual usa branco, verde-claro e verde-escuro com contraste legível. Priorize horários, disponibilidade e ações. Evite emojis e slogans.
+- O ID da reserva serve para localizar o registro. Informá-lo na tela não comprova a identidade do usuário.
 
-- Usar nomes de recursos consistentes no plural.
-- Implementar GET, POST, PUT e DELETE em recursos adequados.
-- Cancelamento pode ser uma alteração de status; não precisa
-  apagar fisicamente a reserva.
-- Utilizar DTOs quando ajudarem a controlar os dados expostos.
-- Validar campos obrigatórios, formatos e valores permitidos.
+## Oracle e configuração
 
-Utilizar códigos HTTP coerentes, por exemplo:
-- 200: consulta ou atualização com resposta.
-- 201: criação.
-- 204: operação bem-sucedida sem corpo.
-- 400: entrada inválida.
-- 404: recurso inexistente.
-- 409: conflito de regra de negócio.
-
-Padronizar respostas de erro.
-Não retornar stack traces, SQL, senhas ou detalhes internos ao cliente.
-
-Não apresentar um filtro por empresa como mecanismo de autorização.
-Se houver autenticação, verificar o vínculo e as permissões do usuário.
-Se não houver, documentar essa limitação do protótipo.
-
-## Oracle e segurança
-
-- Utilizar variáveis de ambiente para credenciais e conexão.
-- Nunca versionar senhas, tokens ou arquivos .env com segredos.
-- Fornecer exemplos de configuração apenas com placeholders.
-- Usar consultas parametrizadas.
-- Garantir fechamento adequado dos recursos de banco.
-- Manter scripts SQL compatíveis com Oracle.
-- Não executar alterações destrutivas no banco sem autorização.
-- Não apagar ou recriar automaticamente tabelas ao iniciar a aplicação.
-- Usar dados fictícios ou públicos, identificando sua origem.
-
-## Deploy no Render
-
-Preparar o deploy desde o início do desenvolvimento.
-
-- Respeitar a porta fornecida pela variável PORT.
-- Configurar conexão Oracle por variáveis de ambiente.
-- Documentar build, inicialização e variáveis necessárias.
-- Criar Dockerfile se for necessário para a estratégia de deploy.
-- Não incluir credenciais na imagem.
-- Disponibilizar uma verificação simples de saúde da aplicação.
-- Distinguir aplicação iniciada de conexão com banco validada.
-- Não afirmar que o deploy funciona sem testar a URL publicada.
-
-Se o ambiente não permitir validar Render ou Oracle,
-informar exatamente o que ficou pendente.
+- Use `DB_URL`, `DB_USER` e `DB_PASSWORD` na configuração do backend.
+- Mantenha credenciais, arquivos locais com segredos e dados de conexão fora do Git, do frontend e da imagem de deploy.
+- Use dados fictícios ou públicos na demonstração.
+- Preserve o esquema Oracle. Mudanças em tabelas e cargas de dados dependem de uma tarefa específica.
 
 ## Testes e validação
 
-Priorizar testes para:
+- Execute os testes e o build pertinentes à mudança usando o Maven Wrapper.
+- Para o frontend, confira consulta de viagens, filtro por data, ocupação, criação, troca e cancelamento.
+- Verifique os estados de erro relevantes: `400` para entrada inválida, `404` para recurso inexistente e `409` para conflito de negócio.
+- Execute operações de escrita no Oracle apenas com registros destinados a teste.
+- Informe quais verificações foram executadas e quais ficaram pendentes. Compilação, teste de interface e teste com Oracle são verificações distintas.
 
-- Reserva válida.
-- Viagem lotada.
-- Reserva duplicada.
-- Cancelamento e liberação de vaga.
-- Recurso inexistente.
-- Dados inválidos.
-- Reservas concorrentes para a última vaga.
+## Documentação e entrega
 
-Executar os testes e o build disponíveis antes de concluir mudanças.
+- Mantenha o README coerente com a implementação: objetivo, tecnologias, versões, configuração, execução e exemplos de requisição.
+- O PDF da entrega deve conter capa com nomes e RMs, índice, descrição, justificativa, objetivos, diagrama de classes, protótipos de tela, tabela de endpoints, DER, instruções de execução e links do GitHub e do deploy.
+- Use nomes, links, capturas e resultados reais. Identifique os itens pendentes.
+- O aluno registra manualmente em `prompts.md` os prompts que utilizou. Deixe esse arquivo sob edição do aluno.
 
-Fornecer exemplos de requisições ou coleção do Postman
-para demonstrar o fluxo completo.
+## Deploy
 
-Não afirmar que testes passaram se não foram executados.
-Não usar um banco alternativo como prova de compatibilidade com Oracle.
+O destino previsto é o Render. A publicação aguarda orientação do professor. A tarefa atual de frontend termina com a validação local.
 
-## Documentação
-
-Manter o README com:
-
-- Ficha da CitizenTech no início.
-- Descrição, justificativa e objetivos.
-- Escopo implementado.
-- Tecnologias e versões.
-- Configuração e execução local.
-- Variáveis de ambiente.
-- Instruções de deploy.
-- Exemplos de uso.
-- Limitações conhecidas.
-
-Preparar conteúdo coerente para o PDF único exigido:
-
-- Capa com projeto, nomes completos e RMs.
-- Índice.
-- Descrição, justificativa e objetivos.
-- Diagrama de classes refletindo o código.
-- Protótipos das telas.
-- Tabela de endpoints GET, POST, PUT e DELETE.
-- Diagrama Entidade-Relacionamento.
-- Ferramentas e versões.
-- Links reais do GitHub e do deploy.
-- Passo a passo para executar.
-
-Não inventar nomes, RMs, links ou resultados de testes.
-Sinalizar informações ainda não fornecidas.
-
-## Registro de prompts
-
-O registro em prompts.md será feito manualmente pelo aluno.
-
-- Não criar nem alterar prompts.md por enquanto.
-- Não inventar ou reconstruir prompts como se fossem registros reais.
-- Não afirmar que esse requisito da entrega já foi cumprido.
-
-## Forma de trabalhar
-
-- Implementar em etapas pequenas e verificáveis.
-- Priorizar clareza e código que o aluno consiga explicar.
-- Usar orientação a objetos com propósito.
-- Não criar herança apenas para aumentar a quantidade de classes.
-- Explicar decisões relevantes e regras de negócio.
-- Atualizar a documentação quando o comportamento mudar.
-- Ao terminar, informar o que foi implementado, como foi validado
-  e quais pendências permanecem.
+Quando o deploy for solicitado, respeite a variável `PORT`, configure as credenciais no ambiente do servidor e valide pela URL pública uma rota que consulte o Oracle antes de documentar a publicação como concluída.
