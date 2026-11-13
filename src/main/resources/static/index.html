@@ -1,0 +1,44 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Viagens · MoveFlex</title>
+  <link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#viagens">Ir para viagens</a>
+<header class="masthead"><a class="brand" href="/" aria-label="MoveFlex início"><span class="mark" aria-hidden="true">M</span>MoveFlex</a><span>Área do colaborador</span></header>
+<main>
+  <div class="page-heading"><div><p class="eyebrow">TRANSPORTE COMPARTILHADO</p><h1 id="viagens">Viagens</h1><p>Escolha uma saída e consulte os lugares disponíveis.</p></div><a href="#reserva">Gerenciar reserva <span aria-hidden="true">↗</span></a></div>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <div class="workspace">
+    <section class="schedule" aria-label="Lista de viagens">
+      <form id="filters" class="filters"><div><label for="date">Data da viagem</label><input id="date" name="data" type="date"></div><button type="submit">Filtrar</button><button id="clear" class="quiet" type="button">Limpar filtro</button></form>
+      <div class="list-heading"><h2>Saídas</h2><span id="list-caption">Todas as datas</span></div>
+      <p class="muted small">O bairro é o da linha; nas viagens de volta, pode ser o destino.</p>
+      <p id="list-status" role="status">Carregando viagens…</p><button id="reload" class="secondary" type="button" hidden>Tentar novamente</button>
+      <div class="column-labels" aria-hidden="true"><span>Saída</span><span>Bairro da linha</span><span>Chegada prevista</span><span>Disponibilidade</span></div>
+      <div id="trip-list"></div>
+    </section>
+    <aside class="detail" aria-labelledby="detail-title">
+      <p class="eyebrow">SUA PRÓXIMA VIAGEM</p><h2 id="detail-title">Selecione uma saída</h2>
+      <p id="trip-summary" class="muted">Use “Ver vagas” na lista para consultar a ocupação.</p>
+      <div id="occupancy" role="status" aria-live="polite"></div>
+      <button id="retry-occupancy" class="secondary" type="button" hidden>Consultar vagas novamente</button>
+      <form id="booking" hidden><label for="collaborator">ID do colaborador</label><input id="collaborator" type="number" min="1" step="1" required inputmode="numeric"><p class="small muted">Use seu número de cadastro no MoveFlex.</p><button id="book" type="submit">Reservar lugar</button></form>
+      <div id="exchange" hidden><h3>Trocar viagem</h3><p id="exchange-current"></p><p id="exchange-new"></p><button id="confirm-exchange" type="button">Confirmar troca</button><button id="stop-exchange" class="quiet" type="button">Manter reserva</button></div>
+    </aside>
+  </div>
+  <section id="reserva" class="reservation" aria-labelledby="reservation-title">
+    <div><p class="eyebrow">SUA RESERVA</p><h2 id="reservation-title">Gerenciar reserva</h2><p class="muted">Guarde o número recebido ao reservar.</p></div>
+    <div class="reservation-body">
+      <div id="reservation-summary" role="status" aria-live="polite"><p>Nenhuma reserva selecionada nesta sessão.</p></div>
+      <div id="reservation-actions" class="actions" hidden><button id="exchange-start" type="button">Trocar viagem</button><button id="cancel-start" class="secondary" type="button">Cancelar reserva</button></div>
+      <details id="known-reservation"><summary>Já tenho o número da reserva</summary><p class="small muted">Informe o número para trocar ou cancelar. A API não permite consultar esta reserva: a viagem atual e o status só serão conhecidos se a ação devolver esses dados.</p><form id="manual-reservation" class="manual-form"><div><label for="reservation-id">Número da reserva</label><input id="reservation-id" type="number" min="1" step="1" required inputmode="numeric"></div><button class="secondary" type="submit">Usar esta reserva</button></form></details>
+      <p class="small muted">Protótipo sem autenticação. O número da reserva não comprova identidade.</p>
+    </div>
+  </section>
+</main>
+<footer>MoveFlex <span>Global Solution · FIAP</span></footer>
+<dialog id="cancel-dialog" aria-labelledby="cancel-title"><h2 id="cancel-title">Cancelar reserva</h2><p id="cancel-description"></p><p>O lugar será liberado. O histórico da reserva será mantido.</p><div class="actions"><button id="cancel-confirm" type="button">Confirmar cancelamento</button><button id="cancel-back" class="secondary" type="button">Manter reserva</button></div></dialog>
+</body></html>
