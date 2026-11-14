@@ -13,7 +13,7 @@
 | Indicador de impacto | Percentual de passageiros que chegam ao trabalho até o horário de entrada, comparado ao período anterior ao piloto. |
 | ODS relacionado | ODS 11 — Cidades e Comunidades Sustentáveis. A proposta busca ampliar as opções de transporte coletivo no deslocamento ao trabalho. |
 
-**[Abrir o MoveFlex no Render](https://moveflex.onrender.com/) · [Consultar a API de viagens](https://moveflex.onrender.com/viagens)**
+**[Abrir o MoveFlex no Render](https://moveflex.onrender.com/)**
 
 ## Como o MoveFlex funciona
 
