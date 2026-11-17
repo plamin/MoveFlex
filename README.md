@@ -63,8 +63,8 @@ Use PowerShell, Git e JDK 21. A conta Oracle precisa ter acesso às tabelas do p
 git clone https://github.com/plamin/MoveFlex.git
 cd MoveFlex
 $env:DB_URL = "jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL"
-$env:DB_USER = "SEU_USUARIO"
-$env:DB_PASSWORD = "SUA_SENHA"
+$env:DB_USER = "SEU USUARIO"
+$env:DB_PASSWORD = "SUA SENHA"
 .\mvnw.cmd spring-boot:run
 ```
 
