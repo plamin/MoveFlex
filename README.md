@@ -5,7 +5,7 @@
 | Campo | Descrição |
 |---|---|
 | Nome da solução | MoveFlex |
-| Projeto | Global Solution 2026 · Engenharia de Software · FIAP |
+| Projeto | Global Solution 2026 · Engenharia de Software|
 | Cidadão beneficiado | Trabalhador que precisa chegar ao escritório em horário definido e busca uma opção de transporte nos dias presenciais. |
 | Problema | O trânsito dificulta a chegada ao trabalho no polo da Faria Lima. Funcionários de empresas vizinhas fazem trajetos parecidos, mas uma empresa sozinha pode ter poucos interessados para viabilizar um fretado. |
 | Como funciona | A plataforma reúne a demanda de várias empresas em uma mesma viagem. O funcionário consulta as saídas por data, verifica as vagas e reserva um lugar. Uma operadora parceira realiza o transporte. |
